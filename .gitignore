@@ -1,4 +1,5 @@
 
+.DS_Store
 *.pyc
 
 *.project
@@ -10,3 +11,5 @@ log/*
 CollectedData/*
 
 Intraface
+
+CollectedData/*

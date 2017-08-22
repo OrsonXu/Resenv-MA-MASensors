@@ -133,9 +133,11 @@ def main(command_args, start_logging = True):
     #BIOHARNESS_COM_PORT = "/dev/cu.BHBHT502508A-iSerialPor"
     #BIOHARNESS_COM_PORT = "/dev/cu.BHBHT011334-iSerialPort1"
     BIOHARNESS_COM_PORT = "/dev/cu.BHBHT017270-iSerialPort1"
+
     
     # Edit here E4 Server information 
-    E4_SERVER_IP = "18.85.59.169" 
+    # E4_SERVER_IP = "18.85.59.169"
+    E4_SERVER_IP = "18.189.12.159" 
     E4_SERVER_PORT = 6666
     
     # Edit here Interface Server information 
@@ -146,7 +148,7 @@ def main(command_args, start_logging = True):
     LOGGING_WEB_CONTROL_PORT = 55556
     
     # Edit here the pather where the collected data is store
-    DATA_BASE_PATH = "./CollectedData/StudyGershon"
+    DATA_BASE_PATH = "./CollectedData/"
 
     # Edit here the port for signal processing server
     PROCESSING_SERVER_IP = "127.0.0.1"
