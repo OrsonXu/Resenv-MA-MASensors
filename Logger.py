@@ -99,7 +99,7 @@ class DataLogger(object):
         current_time = datetime.datetime.now().strftime("%Y%m%d_%I%M%S")
         self.create_directory_if_does_not_exist(base_path, current_time)
         self.path = os.path.join(base_path + "_" + current_time, file_name + "_" + current_time)
-        self.log_file = open(self.path, "wa")
+        self.log_file = open(self.path, "a")
         self.log_file.write(",".join(columns_list))
         self.log_file.write("\r\n")
         print "Logging incoming data into %s " % self.path

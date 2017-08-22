@@ -133,6 +133,7 @@ def main(command_args, start_logging = True):
     #BIOHARNESS_COM_PORT = "/dev/cu.BHBHT502508A-iSerialPor"
     #BIOHARNESS_COM_PORT = "/dev/cu.BHBHT011334-iSerialPort1"
     BIOHARNESS_COM_PORT = "/dev/cu.BHBHT017270-iSerialPort1"
+    # BIOHARNESS_COM_PORT = "COM6"
 
     
     # Edit here E4 Server information 
