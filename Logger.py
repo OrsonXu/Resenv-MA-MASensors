@@ -98,8 +98,10 @@ class DataLogger(object):
     def __init__(self, base_path, file_name, columns_list, write_to_log_lock):
         current_time = datetime.datetime.now().strftime("%Y%m%d_%I%M%S")
         self.create_directory_if_does_not_exist(base_path, current_time)
-        self.path = os.path.join(base_path + "_" + current_time, file_name + "_" + current_time)
-        self.log_file = open(self.path, "a")
+        # self.path = os.path.join(base_path + "_" + current_time, file_name + "_" + current_time)
+        self.path = os.path.join(base_path, file_name)
+
+        self.log_file = open(self.path, "wa")
         self.log_file.write(",".join(columns_list))
         self.log_file.write("\r\n")
         print "Logging incoming data into %s " % self.path
@@ -108,9 +110,11 @@ class DataLogger(object):
         self.columns_list = columns_list
                 
     def create_directory_if_does_not_exist(self, base_path, current_time):
-        if os.path.exists(base_path + "_" + current_time): return
-        os.makedirs(base_path + "_" + current_time)
-        
+        # if os.path.exists(base_path + "_" + current_time): return
+        if os.path.exists(base_path): return
+        # os.makedirs(base_path + "_" + current_time)
+        os.makedirs(base_path)
+
     def write_tuple_to_log_file(self, values_in_tuple, show_on_screen=False):
         tuple_to_list = [str(value) for value in values_in_tuple]
         self.write_list_to_log_file(tuple_to_list, show_on_screen)

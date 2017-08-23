@@ -100,6 +100,7 @@ class BioharnessProtocol(LineReceiver):
         # Visualize the respiration rate
 
 
+
     def send_data_for_processing(self, type, value, timestamp):
         data = {"type":type}
         data["timestamp"] = timestamp
