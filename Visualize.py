@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import os
+import numpy as np
+import scipy.fftpack
+
 # from matplotlib import style
 
 # style.use("fivethirtyeight")
@@ -21,20 +24,23 @@ class RealtimeVis:
     def __init__(self):
         # self.fig = plt.figure()
         # self.ax = self.fig.add_subplot(1,1,1)
-        self.fig, self.ax = plt.subplots()
         self.xs = []
         self.ys = []
         self.flag = False
-        self.showing_datapoints = 5000
+        self.showing_datapoints = 500
+        self.T = 1.0 / 800.0
         plt.ion()
         plt.show(block = False)
 
-    def animate(self,data):
-        # if (len(data) == 0):
-        #     return
-        self.ax.clear()
-        # self.ax.set_ylim(ylim)
-        # background = self.fig.canvas.copy_from_bbox(self.ax.bbox)
+    def animate(self,data, two = False):
+        if (not two):
+            self.fig, self.ax = plt.subplots(1,1)
+        else:
+            self.fig, self.ax = plt.subplots(2,1)
+            # if (len(data) == 0):
+            #     return
+            # self.ax.set_ylim(ylim)
+            # background = self.fig.canvas.copy_from_bbox(self.ax.bbox)
         t = type(data)
         try:
             if (t is float or t is int):
@@ -42,7 +48,8 @@ class RealtimeVis:
             elif(t is list):
                 if (len(data) <= 0):
                     return
-                self.ys += data
+                else:
+                    self.ys += data
         except:
             pass
         # ys = []
@@ -58,16 +65,30 @@ class RealtimeVis:
         #             ys.append(float(split[3]))
         #         except:
         #             pass
+        self.ax[0].clear()
+        self.ax[1].clear()
+        # visulize the raw data
+        # breath diff
+        # yss = np.diff(self.ys)
+        yss = self.ys
+        xss = np.array(range(len(yss))) * self.T
+
         if (len(self.ys) > self.showing_datapoints):
             self.ys = self.ys[-self.showing_datapoints:]
-            xss = range(self.showing_datapoints)
-        else:
-            xss = range(len(self.ys))
+            tmpx = np.linspace(0.0, (self.showing_datapoints - 1) * self.T, self.showing_datapoints)
+            tmpy = np.interp(tmpx, np.array(range(len(self.ys))) * self.T, self.ys)
+            yf = scipy.fftpack.fft(tmpy)
+            xf = np.linspace(0.0, 1.0 / (2.0 * self.T), self.showing_datapoints // 2)
+            self.ax[1].plot(xf, 2.0/self.showing_datapoints * np.abs(yf[:self.showing_datapoints//2]))
+
         yss = self.ys
-        self.ax.plot(xss,yss)
+        xss = np.array(range(len(yss))) * self.T
+        self.ax[0].plot(xss,yss)
+
+
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
-        plt.pause(0.0000001)
+        plt.pause(0.00001)
         # if (not self.flag):
         #     print "show"
         #     self.flag = True

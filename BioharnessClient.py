@@ -16,6 +16,8 @@ from collections import deque
 from twisted.internet.serialport import SerialPort
 import sys
 from Visualize import RealtimeVis
+import numpy as np
+import pandas as pd
 
 class BioharnessProtocol(LineReceiver):
     message_ids = {
@@ -38,7 +40,7 @@ class BioharnessProtocol(LineReceiver):
                       }
 
     def __init__(self, processing_proxy, port, reactor):
-        self.rr_buffer = deque(maxlen=1024)
+        self.rr_buffer = deque(maxlen=180)
         self.processing_proxy = processing_proxy
         self.port = port
         self.reactor = reactor
@@ -72,7 +74,7 @@ class BioharnessProtocol(LineReceiver):
 
     def default_signal_waveform_handler(self, signal_packet, start_new_stream):
         samples_iterator = SignalPacketIterator(signal_packet).iterate_timed_samples()
-        tmpdata = []
+        bb_buffer = []
         for signal_sample in samples_iterator:
             print signal_sample.type
             self.logger_of_stream[signal_sample.type].write_tuple_to_log_file(signal_sample)
@@ -80,21 +82,47 @@ class BioharnessProtocol(LineReceiver):
             if signal_sample.type == "breathing":
                 # pass
                 # self.count += 1
-                tmpdata.append(float(signal_sample.sample))
-            # if signal_sample.type == 'rr':
-            #     self.rr_buffer.append(signal_sample.sample)
-            #     if len(self.rr_buffer)==self.rr_buffer.maxlen:
-            #         self.send_data_for_processing("rr_buffer",list(self.rr_buffer), signal_sample.timestamp)
-            #
-            #         #empty buffer partially
-            #         for _i in range(0,18):#self.rr_buffer.maxlen/12):
-            #             self.rr_buffer.popleft()
-        self.realtimeVisWave.animate(tmpdata)
+                bb_buffer.append(float(signal_sample.sample))
+            if signal_sample.type == 'rr':
+                self.rr_buffer.append(signal_sample.sample)
+                if len(self.rr_buffer)==self.rr_buffer.maxlen:
+                    self.send_data_for_processing("rr_buffer",list(self.rr_buffer), signal_sample.timestamp)
+                    for _i in range(0,18):
+                        self.rr_buffer.popleft()
+        self.realtimeVisWave.animate(bb_buffer)
 
     def signal_waveform_handler(self, signal_packet, start_new_stream):
-        self.default_signal_waveform_handler(signal_packet, start_new_stream)
-
-
+        samples_iterator = SignalPacketIterator(signal_packet).iterate_timed_samples()
+        bb_buffer = []
+        ecg_buffer = []
+        this_SDNN = 0
+        for signal_sample in samples_iterator:
+            self.logger_of_stream[signal_sample.type].write_tuple_to_log_file(signal_sample)
+            # send data for processing
+            if signal_sample.type == "breathing":
+                # pass
+                # self.count += 1
+                bb_buffer.append(float(signal_sample.sample))
+            elif signal_sample.type == 'rr':
+                self.rr_buffer.append(signal_sample.sample)
+                if len(self.rr_buffer) == self.rr_buffer.maxlen:
+                    self.send_data_for_processing("rr_buffer", list(self.rr_buffer), signal_sample.timestamp)
+                    rr_df = pd.Series(np.array(self.rr_buffer))
+                    rr_df[rr_df.diff().abs() == 0] = np.nan
+                    std = rr_df.dropna().std()  # drop outliers
+                    rr_df[rr_df > 5 * std] = np.nan
+                    rr_df = rr_df.dropna()
+                    try:
+                        rr_df = rr_df.abs().interpolate(method='cubic')
+                    except ValueError:
+                        logging.warn("Processing - Could not interpolate rr data.")
+                        return None
+                    this_SDNN = rr_df.std()
+                    for _i in range(0,18):
+                        self.rr_buffer.popleft()
+            elif signal_sample.type == "ecg":
+                ecg_buffer.append(signal_sample.sample)
+        self.realtimeVisWave.animate(bb_buffer, True)
 
     def display_status_flags(self, summary_packet):
         if (summary_packet.heart_rate_unreliable or summary_packet.respiration_rate_unreliable) or (summary_packet.hrv_unreliable or summary_packet.button_pressed):
