@@ -4,6 +4,7 @@ Created on Mar 9, 2016
 @author: nanzhao@media.mit.edu, azaria@media.mit.edu
 '''
 import json
+import time
 import logging 
 from twisted.protocols.basic import LineReceiver
 
@@ -14,6 +15,7 @@ from zephyr.protocol import MessageFrameParser, create_message_frame
 from collections import deque
 from twisted.internet.serialport import SerialPort
 import sys
+from Visualize import RealtimeVis
 
 class BioharnessProtocol(LineReceiver):
     message_ids = {
@@ -41,6 +43,10 @@ class BioharnessProtocol(LineReceiver):
         self.port = port
         self.reactor = reactor
         self.serial = None
+        self.realtimeVisWave = RealtimeVis()
+        # very slow, discarded
+        # self.realtimeVisRate = RealtimeVis()
+        self.count = 0
 
     def send_device_command(self, message_id, payload):
         message_frame = create_message_frame(message_id, payload)
@@ -66,18 +72,24 @@ class BioharnessProtocol(LineReceiver):
 
     def default_signal_waveform_handler(self, signal_packet, start_new_stream):
         samples_iterator = SignalPacketIterator(signal_packet).iterate_timed_samples()
+        tmpdata = []
         for signal_sample in samples_iterator:
+            print signal_sample.type
             self.logger_of_stream[signal_sample.type].write_tuple_to_log_file(signal_sample)
-
             # send data for processing
-            if signal_sample.type == 'rr':
-                self.rr_buffer.append(signal_sample.sample)
-                if len(self.rr_buffer)==self.rr_buffer.maxlen:
-                    self.send_data_for_processing("rr_buffer",list(self.rr_buffer), signal_sample.timestamp)
-
-                    #empty buffer partially
-                    for _i in range(0,18):#self.rr_buffer.maxlen/12):
-                        self.rr_buffer.popleft()
+            if signal_sample.type == "breathing":
+                # pass
+                # self.count += 1
+                tmpdata.append(float(signal_sample.sample))
+            # if signal_sample.type == 'rr':
+            #     self.rr_buffer.append(signal_sample.sample)
+            #     if len(self.rr_buffer)==self.rr_buffer.maxlen:
+            #         self.send_data_for_processing("rr_buffer",list(self.rr_buffer), signal_sample.timestamp)
+            #
+            #         #empty buffer partially
+            #         for _i in range(0,18):#self.rr_buffer.maxlen/12):
+            #             self.rr_buffer.popleft()
+        self.realtimeVisWave.animate(tmpdata)
 
     def signal_waveform_handler(self, signal_packet, start_new_stream):
         self.default_signal_waveform_handler(signal_packet, start_new_stream)
@@ -97,7 +109,11 @@ class BioharnessProtocol(LineReceiver):
 
     def event_callback(self, summary_packet):
         self.default_event_callback(summary_packet)
+        summary_str = ",".join([str(value) for value in summary_packet])
         # Visualize the respiration rate
+        # print float(str(summary_packet[3]))
+        # self.realtimeVisRate.animate(float(str(summary_packet[3])))
+
 
 
 
@@ -108,11 +124,11 @@ class BioharnessProtocol(LineReceiver):
         self.processing_proxy.notifyAll(data)
 
     def set_event_callbacks(self, callbacks= None):
-        if callbacks is None: callbacks=[self.default_event_callback]
+        if callbacks is None: callbacks=[self.event_callback]
         self.event_callbacks = callbacks
 
     def set_waveform_callbacks(self, callbacks= None):
-        if callbacks is None: callbacks=[self.default_signal_waveform_handler]
+        if callbacks is None: callbacks=[self.signal_waveform_handler]
         self.waveform_callbacks = callbacks
 
 
