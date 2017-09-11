@@ -103,25 +103,25 @@ class BioharnessProtocol(LineReceiver):
                 # pass
                 # self.count += 1
                 bb_buffer.append(float(signal_sample.sample))
-            elif signal_sample.type == 'rr':
-                self.rr_buffer.append(signal_sample.sample)
-                if len(self.rr_buffer) == self.rr_buffer.maxlen:
-                    self.send_data_for_processing("rr_buffer", list(self.rr_buffer), signal_sample.timestamp)
-                    rr_df = pd.Series(np.array(self.rr_buffer))
-                    rr_df[rr_df.diff().abs() == 0] = np.nan
-                    std = rr_df.dropna().std()  # drop outliers
-                    rr_df[rr_df > 5 * std] = np.nan
-                    rr_df = rr_df.dropna()
-                    try:
-                        rr_df = rr_df.abs().interpolate(method='cubic')
-                    except ValueError:
-                        logging.warn("Processing - Could not interpolate rr data.")
-                        return None
-                    this_SDNN = rr_df.std()
-                    for _i in range(0,18):
-                        self.rr_buffer.popleft()
-            elif signal_sample.type == "ecg":
-                ecg_buffer.append(signal_sample.sample)
+            # elif signal_sample.type == 'rr':
+            #     self.rr_buffer.append(signal_sample.sample)
+            #     if len(self.rr_buffer) == self.rr_buffer.maxlen:
+            #         self.send_data_for_processing("rr_buffer", list(self.rr_buffer), signal_sample.timestamp)
+            #         rr_df = pd.Series(np.array(self.rr_buffer))
+            #         rr_df[rr_df.diff().abs() == 0] = np.nan
+            #         std = rr_df.dropna().std()  # drop outliers
+            #         rr_df[rr_df > 5 * std] = np.nan
+            #         rr_df = rr_df.dropna()
+            #         try:
+            #             rr_df = rr_df.abs().interpolate(method='cubic')
+            #         except ValueError:
+            #             logging.warn("Processing - Could not interpolate rr data.")
+            #             return None
+            #         this_SDNN = rr_df.std()
+            #         for _i in range(0,18):
+            #             self.rr_buffer.popleft()
+            # elif signal_sample.type == "ecg":
+            #     ecg_buffer.append(signal_sample.sample)
         self.realtimeVisWave.animate(bb_buffer, True)
 
     def display_status_flags(self, summary_packet):
